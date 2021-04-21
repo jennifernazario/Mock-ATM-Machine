@@ -1,8 +1,8 @@
 from datetime import datetime
 import random
-
-# dictionary
-database = {}  # dictionary
+import validation
+import database
+from getpass import getpass
 
 
 # Beginning of program
@@ -28,23 +28,33 @@ def initiate_system():
     else:
         print("Invalid response. Please try again.")
         # Initiates system by asking if a user has an account.
-        initiate_system()
+    initiate_system()
 
 
 # Directs the user to login to their existing account.
 def login():
     print("****** Login ******")
     # Direct user to login with their account number AND password.
-    existing_account_number = int(input("\nWhat is your account number?\n"))
-    password = input("What is your password? \n")
+    existing_account_number = input("\nWhat is your account number?\n")
+    # is the account number valid?
+    valid_account_number = validation.account_number_validation(existing_account_number)
+    # if the account number is valid, proceed
+    if valid_account_number:
+        # asks for a password if the account number is valid
+        password = getpass("What is your password? \n")
 
-    for account_number, user_details in database.items():
-        if account_number == existing_account_number:
-            if user_details[3] == password:
-                bank_operation(user_details, account_number)
-    print("Invalid account number or password.")
-    # Directs the user to login to their existing account.
-    login()
+        user = database.authenticated_user(existing_account_number, password);
+
+        if user:
+            bank_operation(user, existing_account_number)
+
+        print("Invalid account or number")
+
+        # Directs the user to login to their existing account.
+        login()
+    else:
+        print("Invalid account number. Check that you have exactly 10 integers")
+        initiate_system()
 
 
 # Directs the user to register for a new account
@@ -54,22 +64,38 @@ def register():
     first_name = str(input("What is your first name? \n"))
     last_name = str(input("What is your last name? \n"))
     email_address = str(input("What is your email address? \n"))
+    # Makes sure that the email address must contain at least an "@" character
+    if set(email_address) >= {"@", "."}:
+        pass
+    else:
+        print("Please type a real email address.")
+        register()
+
     # Directs the user to create a password.
-    password = str(input("Please create a password: \n"))
+    password = getpass("Please create a password: \n")
+
     # Randomly generates an account number.
     account_number = generate_account_number()
-    account_balance = 1500
-    database[account_number] = [first_name, last_name, email_address, password, account_balance]
 
-    # Prints confirmation of the creation of a new account.
-    print("Your account has been created.")
-    print("=============================")
-    # Prints randomly generated account number.
-    print("Your account number is: " + str(account_number))
-    print("Please store your account number in a secure place.")
-    print("=============================")
-    # Directs the user to login to their existing account.
-    login()
+    # account balance?
+    account_balance = 1500
+
+    is_user_created = database.create(account_number, first_name, last_name, email_address, password)
+
+    # Prints confirmation upon the creation of a new account.
+    if is_user_created:
+        print("Your account has been created.")
+        print("=============================")
+        # Prints randomly generated account number.
+        print("Your account number is: " + str(account_number))
+        print("Please store your account number in a secure place.")
+        print("=============================")
+        # Directs the user to login to their existing account.
+        login()
+    else:
+        print("Something went wrong, please try again")
+        # help: not sure if needed
+        register()
 
 
 # This function allows users to deposit, withdraw, logout, or exit the program.
@@ -95,7 +121,7 @@ def bank_operation(user, account_number):
     # Redirects user to the bank operation screen upon selecting an invalid option.
     else:
         print("Invalid option selected")
-    bank_operation(user, account_number)
+        bank_operation(user, account_number)
 
 
 # Randomly generates an account number.
@@ -124,14 +150,24 @@ def deposit_operation(current_balance, account_number):
     database[account_number][4] = current_balance
     print("Your current balance is " + str(current_balance) + ".")
     # return current_balance
+    # I need help
 
 
 # Direct user to the withdrawal screen.
 def withdrawal_operation(current_balance, account_number):
+    # asks user how much money they would like to withdraw
     withdrawal_amount = int(input("How much would you like to withdraw? \n"))
+    # check if current balance is > withdrawal balance
+    if current_balance > withdrawal_amount:
+        pass
+    else:
+        print("You do not have enough money in your account. Please select a smaller amount to withdraw.")
+        return withdrawal_operation(current_balance, account_number)
+    # deduct withdrawn amount from current balance
     current_balance -= withdrawal_amount
     database[account_number][4] = current_balance
     print("Take your cash!")
+    # Displays current balance
     print("Your current balance is " + str(current_balance) + ".")
 
 
